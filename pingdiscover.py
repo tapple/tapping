@@ -4,9 +4,8 @@ import asyncio
 import aioping
 
 
-
 async def do_ping(host, timeout):
-    print(f"do_ping({host}, {timeout})")
+    # print(f"do_ping({host}, {timeout})")
     try:
         delay = await aioping.ping(str(host), timeout=timeout) * 1000
         print(f"{host}: Ping response in {delay} ms")
@@ -15,7 +14,7 @@ async def do_ping(host, timeout):
 
 
 async def subscriber(queue, timeout):
-    print("starting worker")
+    # print("starting worker")
     while True:
         host = await queue.get()
         await do_ping(host, timeout)
@@ -31,12 +30,12 @@ async def main():
                         help="the number of seconds after giving up on pinging a host (default 5s)")
     args = parser.parse_args()
 
-    print(args)
+    # print(args)
     queue = asyncio.Queue(args.concurrency * 4)
     workers = [asyncio.create_task(subscriber(queue, args.timeout)) for i in range(args.concurrency)]
 
     for host in args.network:
-        print(f"enqueueing host {host}")
+        # print(f"enqueueing host {host}")
         await queue.put(host)
     await queue.join()
 
