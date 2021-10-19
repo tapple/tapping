@@ -1,20 +1,31 @@
 import argparse
 import ipaddress
 import asyncio
+import logging
+import time
+
 import aioping
 
 
+logger = logging.getLogger(__name__)
+
+
 async def do_ping(host, timeout):
-    # print(f"do_ping({host}, {timeout})")
+    logger.debug(f"do_ping({host}, {timeout})")
     try:
-        delay = await aioping.ping(str(host), timeout=timeout) * 1000
-        print(f"{host}: Ping response in {delay} ms")
+        start_time = time.monotonic()
+        delay = await aioping.ping(str(host), timeout=timeout)
+        exec_time = time.monotonic() - start_time
+        print(f"{host}: Ping response in {delay*1000:.0f} ms")
+        logger.debug(f"{host}: Ping response in {delay} ms (exec time {exec_time})")
     except TimeoutError:
+        exec_time = time.monotonic() - start_time
         print(f"{host}: Timed out")
+        logger.debug(f"{host}: Timed out (exec time {exec_time})")
 
 
 async def subscriber(queue, timeout):
-    # print("starting worker")
+    logger.debug("starting worker")
     while True:
         host = await queue.get()
         await do_ping(host, timeout)
@@ -35,7 +46,7 @@ async def main():
     workers = [asyncio.create_task(subscriber(queue, args.timeout)) for i in range(args.concurrency)]
 
     for host in args.network:
-        # print(f"enqueueing host {host}")
+        logger.debug(f"enqueueing host {host}")
         await queue.put(host)
     await queue.join()
 
@@ -46,4 +57,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    # logging.basicConfig(level=logging.DEBUG, )
     asyncio.run(main())
