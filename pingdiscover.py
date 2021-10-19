@@ -6,25 +6,22 @@ import time
 
 import aioping
 
-
 logger = logging.getLogger(__name__)
 
 
-async def do_ping(host, timeout):
+async def do_ping(host: ipaddress.IPv4Address, timeout: float):
     logger.debug(f"do_ping({host}, {timeout})")
+    start_time = time.monotonic()
     try:
-        start_time = time.monotonic()
         delay = await aioping.ping(str(host), timeout=timeout)
-        exec_time = time.monotonic() - start_time
-        print(f"{host}: Ping response in {delay*1000:.0f} ms")
-        logger.debug(f"{host}: Ping response in {delay} ms (exec time {exec_time})")
+        print(f"{host}: Ping response in {delay * 1000:.0f} ms")
     except TimeoutError:
-        exec_time = time.monotonic() - start_time
         print(f"{host}: Timed out")
-        logger.debug(f"{host}: Timed out (exec time {exec_time})")
+    exec_time = time.monotonic() - start_time
+    logger.debug(f"ping {host} executed in {exec_time}")
 
 
-async def subscriber(queue, timeout):
+async def subscriber(queue: asyncio.Queue, timeout: float):
     logger.debug("starting worker")
     while True:
         host = await queue.get()
