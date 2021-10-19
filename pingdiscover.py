@@ -13,7 +13,7 @@ async def do_ping(host, timeout):
         print("Timed out")
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(description='Ping all hosts within the given subnet')
     parser.add_argument('network', type=ipaddress.ip_network, help='Subnet + netmask. E.g. "192.168.0.0/24"')
     parser.add_argument('--concurrency', '--jobs', '-c', '-j', type=int, default=1,
@@ -23,11 +23,10 @@ def main():
     args = parser.parse_args()
 
     print(args)
-    loop = asyncio.get_event_loop()
 
     for host in args.network:
-        loop.run_until_complete(do_ping(str(host), args.timeout))
+        await do_ping(str(host), args.timeout)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
