@@ -4,13 +4,25 @@ import asyncio
 import aioping
 
 
+
 async def do_ping(host, timeout):
     try:
         delay = await aioping.ping(host, timeout=timeout) * 1000
-        print("Ping response in %s ms" % delay)
-
+        print(f"{host}: Ping response in {delay} ms")
     except TimeoutError:
-        print("Timed out")
+        print(f"{host}: Timed out")
+
+
+async def publisher(queue, network):
+    for host in network:
+        await queue.put(host)
+
+
+async def subscriber(queue, timeout):
+    while True:
+        host = await queue.get()
+        await do_ping(host, timeout)
+        queue.task_done()
 
 
 async def main():
@@ -23,9 +35,16 @@ async def main():
     args = parser.parse_args()
 
     print(args)
+    queue = asyncio.Queue(args.concurrency * 4)
+    pub = asyncio.create_task(publisher(queue, args.network))
+    workers = [asyncio.create_task(subscriber(queue, args.timeout)) for i in range(args.concurrency)]
 
-    for host in args.network:
-        await do_ping(str(host), args.timeout)
+    await pub
+    await queue.join()
+    for task in workers:
+        task.cancel()
+    # Wait until all worker tasks are cancelled.
+    await asyncio.gather(*workers, return_exceptions=True)
 
 
 if __name__ == "__main__":
