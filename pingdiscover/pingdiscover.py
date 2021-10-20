@@ -26,18 +26,15 @@ async def do_ping(host: ipaddress.IPv4Address, timeout: float) -> None:
     logger.debug(f"ping {host} executed in {exec_time}")
 
 
-async def subscriber(queue: asyncio.Queue, timeout: float) -> None:
+async def bound_ping(sem: asyncio.Semaphore, host: ipaddress.IPv4Address, timeout: float) -> None:
     """
-    Worker. Works thru the queue and pings every host address inside it
-    :param queue: queue of addresses to ping
-    :param timeout: Wait this long for each ping before giving up
-    :return:
+    Ping the given host, and print the result. Concurrency bound by the given semaphore
+    :param sem: semaphore that limits concurrency
+    :param host: address of the host to ping
+    :param timeout: Wait this many seconds before giving up
     """
-    logger.debug("starting worker")
-    while True:
-        host = await queue.get()
+    async with sem:
         await do_ping(host, timeout)
-        queue.task_done()
 
 
 async def main() -> None:
@@ -53,19 +50,9 @@ async def main() -> None:
                         help="the number of seconds after giving up on pinging a host (default 5s)")
     args = parser.parse_args()
 
-    # print(args)
-    queue = asyncio.Queue(args.concurrency * 4)
-    workers = [asyncio.create_task(subscriber(queue, args.timeout)) for i in range(args.concurrency)]
-
-    for host in args.network:
-        logger.debug(f"enqueueing host {host}")
-        await queue.put(host)
-    await queue.join()
-
-    for task in workers:
-        task.cancel()
-    # Wait until all worker tasks are cancelled.
-    await asyncio.gather(*workers, return_exceptions=True)
+    sem = asyncio.Semaphore(args.concurrency)
+    tasks = [asyncio.create_task(bound_ping(sem, host, args.timeout)) for host in args.network]
+    await asyncio.gather(*tasks)
 
 
 def run_main() -> None:
