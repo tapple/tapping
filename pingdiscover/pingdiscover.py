@@ -1,6 +1,7 @@
 import argparse
 import ipaddress
 import asyncio
+import typing
 import logging
 import time
 
@@ -26,15 +27,20 @@ async def do_ping(host: ipaddress.IPv4Address, timeout: float) -> None:
     logger.debug(f"ping {host} executed in {exec_time}")
 
 
-async def bound_ping(sem: asyncio.Semaphore, host: ipaddress.IPv4Address, timeout: float) -> None:
+async def gather_with_concurrency(coroutines: list[typing.Awaitable], concurrency: int) -> tuple:
     """
-    Ping the given host, and print the result. Concurrency bound by the given semaphore
-    :param sem: semaphore that limits concurrency
-    :param host: address of the host to ping
-    :param timeout: Wait this many seconds before giving up
+    Run coroutines concurrently, but only concurrency at a time
+    :param coroutines: list of coroutines to execute concurrently
+    :param concurrency: the number of coroutines to run at once
     """
-    async with sem:
-        await do_ping(host, timeout)
+    sem = asyncio.Semaphore(concurrency)
+
+    async def bound_task(coroutine: typing.Awaitable):
+        async with sem:
+            return await coroutine
+
+    bound_tasks = [bound_task(coroutine) for coroutine in coroutines]
+    return await asyncio.gather(*bound_tasks)
 
 
 async def main() -> None:
@@ -50,9 +56,8 @@ async def main() -> None:
                         help="the number of seconds after giving up on pinging a host (default 5s)")
     args = parser.parse_args()
 
-    sem = asyncio.Semaphore(args.concurrency)
-    tasks = [bound_ping(sem, host, args.timeout) for host in args.network]
-    await asyncio.gather(*tasks)
+    tasks = [do_ping(host, args.timeout) for host in args.network]
+    await gather_with_concurrency(tasks, args.concurrency)
 
 
 def run_main() -> None:
