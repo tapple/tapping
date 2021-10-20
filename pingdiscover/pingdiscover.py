@@ -1,7 +1,7 @@
 import argparse
 import ipaddress
 import asyncio
-import typing
+from typing import Sequence, Awaitable
 import logging
 import time
 
@@ -27,7 +27,7 @@ async def do_ping(host: ipaddress.IPv4Address, timeout: float) -> None:
     logger.debug(f"ping {host} executed in {exec_time}")
 
 
-async def gather_with_concurrency(coroutines: list[typing.Awaitable], concurrency: int) -> tuple:
+async def gather_with_concurrency(coroutines: Sequence[Awaitable], concurrency: int) -> tuple:
     """
     Run coroutines concurrently, but only concurrency at a time
     :param coroutines: list of coroutines to execute concurrently
@@ -35,7 +35,7 @@ async def gather_with_concurrency(coroutines: list[typing.Awaitable], concurrenc
     """
     sem = asyncio.Semaphore(concurrency)
 
-    async def bound_task(coroutine: typing.Awaitable):
+    async def bound_task(coroutine: Awaitable):
         async with sem:
             return await coroutine
 
