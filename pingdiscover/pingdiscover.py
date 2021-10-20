@@ -9,7 +9,12 @@ import aioping
 logger = logging.getLogger(__name__)
 
 
-async def do_ping(host: ipaddress.IPv4Address, timeout: float):
+async def do_ping(host: ipaddress.IPv4Address, timeout: float) -> None:
+    """
+    Ping the given host, and print the result
+    :param host: address of the host to ping
+    :param timeout: Wait this many seconds before giving up
+    """
     logger.debug(f"do_ping({host}, {timeout})")
     start_time = time.monotonic()
     try:
@@ -21,7 +26,13 @@ async def do_ping(host: ipaddress.IPv4Address, timeout: float):
     logger.debug(f"ping {host} executed in {exec_time}")
 
 
-async def subscriber(queue: asyncio.Queue, timeout: float):
+async def subscriber(queue: asyncio.Queue, timeout: float) -> None:
+    """
+    Worker. Works thru the queue and pings every host address inside it
+    :param queue: queue of addresses to ping
+    :param timeout: Wait this long for each ping before giving up
+    :return:
+    """
     logger.debug("starting worker")
     while True:
         host = await queue.get()
@@ -29,7 +40,11 @@ async def subscriber(queue: asyncio.Queue, timeout: float):
         queue.task_done()
 
 
-async def main():
+async def main() -> None:
+    """
+    entry point for the program
+    :return:
+    """
     parser = argparse.ArgumentParser(description='Ping all hosts within the given subnet')
     parser.add_argument('network', type=ipaddress.ip_network, help='Subnet + netmask. E.g. "192.168.0.0/24"')
     parser.add_argument('--concurrency', '--jobs', '-c', '-j', type=int, default=1,
@@ -53,7 +68,8 @@ async def main():
     await asyncio.gather(*workers, return_exceptions=True)
 
 
-def run_main():
+def run_main() -> None:
+    """ Convenience method to start the async main function """
     # logging.basicConfig(level=logging.DEBUG, )
     asyncio.run(main())
 
