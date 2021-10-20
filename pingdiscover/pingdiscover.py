@@ -5,7 +5,7 @@ from typing import Sequence, Awaitable
 import logging
 import time
 
-import aioping
+import aioping  # type: ignore
 
 logger = logging.getLogger(__name__)
 
