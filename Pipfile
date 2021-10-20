@@ -11,3 +11,6 @@ mypy = "*"
 
 [requires]
 python_version = "3.9"
+
+[scripts]
+mypy = "mypy pingdiscover"
