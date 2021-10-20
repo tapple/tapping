@@ -53,6 +53,10 @@ async def main():
     await asyncio.gather(*workers, return_exceptions=True)
 
 
-if __name__ == "__main__":
+def run_main():
     # logging.basicConfig(level=logging.DEBUG, )
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    run_main()
