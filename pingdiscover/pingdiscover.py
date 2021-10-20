@@ -51,7 +51,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     sem = asyncio.Semaphore(args.concurrency)
-    tasks = [asyncio.create_task(bound_ping(sem, host, args.timeout)) for host in args.network]
+    tasks = [bound_ping(sem, host, args.timeout) for host in args.network]
     await asyncio.gather(*tasks)
 
 
